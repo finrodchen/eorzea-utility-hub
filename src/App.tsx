@@ -1,0 +1,283 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Home, 
+  CloudSun, 
+  Grid3X3, 
+  BookOpen, 
+  Settings, 
+  MessageSquare, 
+  Clock,
+  ChevronRight,
+  Menu,
+  X,
+  History,
+  Bird,
+  CheckSquare,
+  HelpCircle,
+  ShoppingCart,
+  Map as MapIcon,
+  Bell
+} from 'lucide-react';
+import { getEorzeaTime } from './utils/ff14';
+
+// Components
+import MiniCactpot from './components/MiniCactpot';
+import WondrousTails from './components/WondrousTails';
+import Skywatcher from './components/Skywatcher';
+import SightseeingLog from './components/SightseeingLog';
+import Dashboard from './components/Dashboard';
+import Changelog from './components/Changelog';
+import ChocoboColor from './components/ChocoboColor';
+import DutyChecklist from './components/DutyChecklist';
+import NavigationGuide from './components/NavigationGuide';
+import MarketBoard from './components/MarketBoard';
+import UsefulLinks from './components/UsefulLinks';
+import TreasureHunt from './components/TreasureHunt';
+import SetAlarm from './components/SetAlarm';
+
+type View = 'home' | 'cactpot' | 'tails' | 'weather' | 'sightseeing' | 'changelog' | 'chocobo' | 'checklist' | 'guide' | 'market' | 'links' | 'treasure' | 'alarm';
+
+export default function App() {
+  const [currentView, setCurrentView] = useState<View>('home');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [et, setEt] = useState(getEorzeaTime());
+  const [localTime, setLocalTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setEt(getEorzeaTime());
+      setLocalTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
+
+  const toggleGroup = (label: string) => {
+    setOpenGroups(prev => 
+      prev.includes(label) ? prev.filter(g => g !== label) : [...prev, label]
+    );
+  };
+
+  const navGroups = [
+    {
+      label: '日常任務',
+      items: [
+        { id: 'home', label: '總覽', icon: Home, image: '/tools/Dashboard.png' },
+        { id: 'checklist', label: '任務進度', icon: CheckSquare, image: '/tools/DutyChecklist.png' },
+        { id: 'tails', label: '庫洛天書', icon: BookOpen, image: '/tools/WondrousTails.png' },
+      ]
+    },
+    {
+      label: '實用工具',
+      items: [
+        { id: 'alarm', label: '自訂鬧鐘', icon: Bell, image: '/tools/SetAlarm.png' },
+        { id: 'market', label: '市場查詢', icon: ShoppingCart, image: '/tools/MarketBoard.png' },
+        { id: 'treasure', label: '藏寶搜尋', icon: MapIcon, image: '/tools/TreasureHunt.png' },
+        { id: 'cactpot', label: '仙人微彩', icon: Grid3X3, image: '/tools/MiniCactpot.png' },
+        { id: 'chocobo', label: '陸行鳥染色', icon: Bird, image: '/tools/ChocoboColor.png' },
+      ]
+    },
+    {
+      label: '地圖與天氣',
+      items: [
+        { id: 'weather', label: '天氣預報', icon: CloudSun, image: '/tools/Skywatcher.png' },
+        { id: 'sightseeing', label: '探索筆記', icon: Clock, image: '/tools/SightseeingLog.png' },
+      ]
+    },
+    {
+      label: '其他資源',
+      items: [
+        { id: 'links', label: '好用連結', icon: Settings, image: '/tools/UsefulLinks.png' },
+        { id: 'guide', label: '導覽輔助', icon: HelpCircle, image: '/tools/NavigationGuide.png' },
+        { id: 'changelog', label: '更新日誌', icon: History, image: '/tools/Changelog.png' },
+      ]
+    }
+  ];
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'home': return <Dashboard et={et} onViewChange={setCurrentView} />;
+      case 'checklist': return <DutyChecklist />;
+      case 'market': return <MarketBoard />;
+      case 'alarm': return <SetAlarm />;
+      case 'cactpot': return <MiniCactpot />;
+      case 'tails': return <WondrousTails />;
+      case 'weather': return <Skywatcher et={et} />;
+      case 'treasure': return <TreasureHunt />;
+      case 'chocobo': return <ChocoboColor />;
+      case 'sightseeing': return <SightseeingLog et={et} />;
+      case 'links': return <UsefulLinks />;
+      case 'changelog': return <Changelog />;
+      case 'guide': return <NavigationGuide onViewChange={setCurrentView} />;
+      default: return <Dashboard et={et} onViewChange={setCurrentView} />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#121212] text-[#E0E0E0] font-sans selection:bg-[#D39E47]/30">
+      {/* Mobile Header */}
+      <header className="lg:hidden flex items-center justify-between p-4 border-b border-white/5 bg-[#1a1a1a]">
+        <button 
+          onClick={() => setCurrentView('home')}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
+          <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-lg" referrerPolicy="no-referrer" />
+          <h1 className="font-bold text-lg tracking-tight text-white">艾歐澤亞助手</h1>
+        </button>
+        <button 
+          onClick={() => setIsSidebarOpen(true)}
+          className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+        >
+          <Menu size={24} />
+        </button>
+      </header>
+
+      <div className="flex h-[calc(100vh-64px)] lg:h-screen overflow-hidden">
+        {/* Sidebar */}
+        <aside className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-[#1a1a1a] border-r border-white/5 transform transition-transform duration-300 ease-in-out
+          lg:relative lg:translate-x-0
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          <div className="flex flex-col h-full">
+            <button 
+              onClick={() => setCurrentView('home')}
+              className="p-6 hidden lg:flex items-center gap-3 hover:opacity-80 transition-opacity text-left"
+            >
+              <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-lg shadow-amber-500/10" referrerPolicy="no-referrer" />
+              <div>
+                <h1 className="font-bold text-lg tracking-tight text-white">艾歐澤亞助手</h1>
+                <p className="text-[10px] uppercase tracking-widest text-[#D39E47] font-semibold">Utility Hub V1.7.0</p>
+              </div>
+            </button>
+
+            <nav className="flex-1 px-4 py-4 space-y-6 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {navGroups.map((group) => (
+                <div key={group.label} className="space-y-1">
+                  <button 
+                    onClick={() => toggleGroup(group.label)}
+                    className="w-full flex items-center justify-between px-4 text-[10px] font-bold text-[#666] uppercase tracking-widest mb-2 hover:text-white transition-colors"
+                  >
+                    {group.label}
+                    <ChevronRight size={14} className={`transition-transform ${openGroups.includes(group.label) ? 'rotate-90' : ''}`} />
+                  </button>
+                  {openGroups.includes(group.label) && (
+                    <div className="space-y-1">
+                      {group.items.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setCurrentView(item.id as View);
+                            setIsSidebarOpen(false);
+                            setOpenGroups([]);
+                            const main = document.getElementById('main-content');
+                            if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className={`
+                            w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group
+                            ${currentView === item.id 
+                              ? 'bg-[#D39E47] text-black font-semibold shadow-lg shadow-[#D39E47]/10' 
+                              : 'hover:bg-white/5 text-[#9e9e9e] hover:text-white'}
+                          `}
+                        >
+                          {item.image ? (
+                            <img 
+                              src={item.image} 
+                              alt="" 
+                              className={`w-5 h-5 object-contain transition-transform ${currentView === item.id ? 'scale-110' : 'group-hover:scale-110 opacity-70 hover:opacity-100'}`} 
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <item.icon size={20} className={currentView === item.id ? 'text-black' : 'group-hover:scale-110 transition-transform'} />
+                          )}
+                          <span className="text-sm">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </nav>
+
+            <div className="p-4 border-t border-white/5 space-y-2">
+              <div className="bg-black/20 rounded-2xl p-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#00B0FF]/20 flex items-center justify-center shrink-0">
+                  <Clock size={16} className="text-[#00B0FF]" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#9e9e9e] uppercase font-bold tracking-tighter">艾歐澤亞時間 (ET)</p>
+                  <p className="text-lg font-mono font-medium text-white leading-none">
+                    {String(et.hours).padStart(2, '0')}:{String(et.minutes).padStart(2, '0')}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-black/20 rounded-2xl p-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                  <Clock size={16} className="text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#9e9e9e] uppercase font-bold tracking-tighter">本地時間 (LT)</p>
+                  <p className="text-lg font-mono font-medium text-white leading-none">
+                    {localTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Close Button */}
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="lg:hidden absolute top-4 right-4 p-2 text-[#9e9e9e]"
+          >
+            <X size={24} />
+          </button>
+        </aside>
+
+        {/* Main Content */}
+        <main id="main-content" className="flex-1 overflow-y-auto bg-[#121212] relative">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentView}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="p-6 lg:p-10 max-w-7xl mx-auto"
+            >
+              {renderView()}
+            </motion.div>
+          </AnimatePresence>
+          
+          {/* Back to Top Button */}
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={() => {
+              const main = document.getElementById('main-content');
+              if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="fixed bottom-6 right-6 p-3 bg-[#D39E47] text-black rounded-full shadow-lg hover:bg-[#b88a3d] transition-colors z-50"
+          >
+            <ChevronRight className="rotate-[-90deg]" size={24} />
+          </motion.button>
+        </main>
+      </div>
+
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+    </div>
+  );
+}

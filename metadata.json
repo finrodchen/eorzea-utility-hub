@@ -1,0 +1,7 @@
+{
+  "name": "艾歐澤亞生活助手 (Eorzea Utility Hub)",
+  "description": "FF14 繁體中文版玩家的多功能工具箱，包含艾歐澤亞時間、天氣預報、陸行鳥染色計算、仙人微彩與庫洛天書機率計算等功能。",
+  "requestFramePermissions": [
+    "notifications"
+  ]
+}

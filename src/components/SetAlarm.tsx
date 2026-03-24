@@ -1,0 +1,184 @@
+import React, { useState, useEffect } from 'react';
+import { Bell, Clock, Trash2, CalendarDays, CalendarRange, FileText, Anchor, Briefcase, Compass, Sword, ShieldCheck } from 'lucide-react';
+import { motion } from 'motion/react';
+
+interface Alarm {
+  id: string;
+  label: string;
+  targetTime: Date;
+  active: boolean;
+  isReset: boolean;
+  durationHours?: number;
+  offsetMinutes?: number;
+}
+
+export default function SetAlarm() {
+  const [alarms, setAlarms] = useState<Alarm[]>(() => {
+    const saved = localStorage.getItem('ff14-alarms');
+    if (saved) {
+      try {
+        return JSON.parse(saved).map((a: any) => ({ ...a, targetTime: new Date(a.targetTime) }));
+      } catch (e) { return []; }
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ff14-alarms', JSON.stringify(alarms));
+  }, [alarms]);
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  useEffect(() => {
+    alarms.forEach(alarm => {
+      if (alarm.active && now >= alarm.targetTime) {
+        new Notification('艾歐澤亞助手 - 鬧鐘提醒', {
+          body: `${alarm.label} 時間到了！`,
+          icon: '/logo.png'
+        });
+        setAlarms(prev => prev.map(a => a.id === alarm.id ? { ...a, active: false } : a));
+      }
+    });
+  }, [now, alarms]);
+
+  const formatCountdown = (target: Date) => {
+    const diff = target.getTime() - now.getTime();
+    if (diff <= 0) return '時間已到';
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    return `${days > 0 ? days + '天 ' : ''}${hours}小時 ${minutes}分 ${seconds}秒`;
+  };
+
+  const getDailyReset = () => {
+    const reset = new Date(now);
+    reset.setUTCHours(15, 0, 0, 0);
+    if (now > reset) reset.setUTCDate(reset.getUTCDate() + 1);
+    return reset;
+  };
+
+  const getWeeklyReset = () => {
+    const reset = new Date(now);
+    reset.setUTCHours(8, 0, 0, 0);
+    const currentDay = reset.getUTCDay();
+    let daysUntilTuesday = (2 - currentDay + 7) % 7;
+    if (daysUntilTuesday === 0 && now > reset) daysUntilTuesday = 7;
+    reset.setUTCDate(reset.getUTCDate() + daysUntilTuesday);
+    return reset;
+  };
+
+  const getLevequestReset = () => {
+    const nowGmt8 = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const reset1 = new Date(nowGmt8);
+    reset1.setUTCHours(8, 0, 0, 0);
+    const reset2 = new Date(nowGmt8);
+    reset2.setUTCHours(20, 0, 0, 0);
+    let nextReset = reset1;
+    if (nowGmt8 >= reset1 && nowGmt8 < reset2) nextReset = reset2;
+    else if (nowGmt8 >= reset2) nextReset = new Date(reset1.getTime() + 24 * 60 * 60 * 1000);
+    return new Date(nextReset.getTime() - (8 * 60 * 60 * 1000));
+  };
+
+  const getOceanFishingDeparture = () => {
+    const nowGmt8 = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const hour = nowGmt8.getUTCHours();
+    const nextDepartureHour = (Math.floor(hour / 2) + 1) * 2;
+    const departure = new Date(nowGmt8);
+    departure.setUTCHours(nextDepartureHour % 24, 0, 0, 0);
+    if (nextDepartureHour >= 24) departure.setUTCDate(departure.getUTCDate() + 1);
+    return new Date(departure.getTime() - (8 * 60 * 60 * 1000));
+  };
+
+  const toggleAlarm = (def: any) => {
+    const existing = alarms.find(a => a.label === def.label);
+    if (existing) {
+      setAlarms(prev => prev.filter(a => a.id !== existing.id));
+    } else {
+      let targetTime: Date;
+      if (def.isReset) {
+        if (def.label.includes('每日')) targetTime = getDailyReset();
+        else if (def.label.includes('每週')) targetTime = getWeeklyReset();
+        else if (def.label.includes('理符')) targetTime = getLevequestReset();
+        else if (def.label.includes('出海')) targetTime = new Date(getOceanFishingDeparture().getTime() - (def.offsetMinutes || 0) * 60 * 1000);
+        else targetTime = new Date();
+      } else {
+        // Correctly calculate target time from NOW for duration-based alarms
+        targetTime = new Date(new Date().getTime() + (def.duration || 0) * 60 * 60 * 1000);
+      }
+      setAlarms(prev => [...prev, { id: Math.random().toString(36), label: def.label, targetTime, active: true, isReset: !!def.isReset }]);
+    }
+  };
+
+  const alarmDefinitions = [
+    { label: '每日任務重設提醒', isReset: true, icon: CalendarDays, color: 'text-amber-500' },
+    { label: '每週任務重設提醒', isReset: true, icon: CalendarRange, color: 'text-rose-500' },
+    { label: '理符受理限額補充提醒', isReset: true, icon: FileText, color: 'text-sky-500' },
+    { label: '出海垂釣準備', isReset: true, icon: Anchor, color: 'text-indigo-500' },
+    { label: '雇員籌集委託', duration: 1, icon: Briefcase, color: 'text-emerald-500' },
+    { label: '雇員探索委託', duration: 18, icon: Compass, color: 'text-amber-500' },
+    { label: '雇員自由委託', duration: 1, icon: Briefcase, color: 'text-emerald-500' },
+    { label: '冒險者小隊訓練', duration: 1, icon: Sword, color: 'text-rose-500' },
+    { label: '冒險者小隊分隊任務', duration: 18, icon: ShieldCheck, color: 'text-sky-500' },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <header className="space-y-4">
+        <div className="flex items-center gap-3">
+          <img src="/tools/SetAlarm.png" alt="" className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
+          <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-[#D39E47]">Alarm Clock</h2>
+        </div>
+        <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
+          自訂 <span className="text-[#D39E47]">鬧鐘提醒</span>
+        </h1>
+        <p className="text-[#9e9e9e] max-w-2xl">
+          設定各類遊戲內提醒，確保不錯過任何冒險節奏。當計時到達時，將透過瀏覽器發送通知。
+        </p>
+      </header>
+
+      <div className="space-y-2">
+        {alarmDefinitions.map((def, i) => {
+          const alarm = alarms.find(a => a.label === def.label);
+          return (
+            <div key={i} className="bg-[#1a1a1a] border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-white/10 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className={`p-2 bg-white/5 rounded-lg ${def.color}`}>
+                  <def.icon size={20} />
+                </div>
+                <div className="flex flex-col">
+                  <h4 className="font-bold text-white">{def.label}</h4>
+                  <span className="text-sm font-mono text-[#9e9e9e] md:hidden">
+                    {alarm?.active ? formatCountdown(alarm.targetTime) : '--:--:--'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-mono text-[#9e9e9e] hidden md:block">
+                  {alarm?.active ? formatCountdown(alarm.targetTime) : '--:--:--'}
+                </span>
+                <button 
+                  onClick={() => toggleAlarm(def)}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${alarm?.active ? 'bg-emerald-500' : 'bg-gray-600'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all ${alarm?.active ? 'left-7' : 'left-1'}`} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
