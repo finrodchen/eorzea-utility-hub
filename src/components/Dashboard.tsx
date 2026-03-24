@@ -1,19 +1,26 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Grid3X3, BookOpen, CloudSun, Clock, ArrowRight, Bird, CheckSquare, ShoppingCart, Settings, Map as MapIcon, Bell } from 'lucide-react';
+import { Grid3X3, BookOpen, CloudSun, Clock, ArrowRight, Bird, CheckSquare, ShoppingCart, Settings, Map as MapIcon, Bell, Calendar } from 'lucide-react';
+import { CalendarEvent } from './EventCalendar';
 import ResetCountdown from './ResetCountdown';
 import { INITIAL_TASKS } from '../constants/tasks';
 
 interface DashboardProps {
   et: { hours: number; minutes: number };
   onViewChange: (view: any) => void;
+  events: CalendarEvent[];
 }
 
-export default function Dashboard({ et, onViewChange }: DashboardProps) {
+export default function Dashboard({ et, onViewChange, events }: DashboardProps) {
   const [progress, setProgress] = React.useState({
     daily: { done: 0, total: 0 },
     weekly: { done: 0, total: 0 }
   });
+
+  const upcomingEvents = events
+    .filter(e => new Date(e.date) > new Date())
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 3);
 
   React.useEffect(() => {
     const saved = localStorage.getItem('ff14-duty-checklist-v2');
@@ -52,6 +59,7 @@ export default function Dashboard({ et, onViewChange }: DashboardProps) {
     { id: 'weather', label: '天氣預報', icon: CloudSun, image: '/tools/Skywatcher.png', desc: '全地圖天氣查詢，支援稀有天氣篩選。', color: 'bg-emerald-500' },
     { id: 'treasure', label: '藏寶搜尋', icon: MapIcon, image: '/tools/TreasureHunt.png', desc: '對照藏寶圖碎片，快速定位寶藏位置。', color: 'bg-amber-500' },
     { id: 'cactpot', label: '仙人微彩', icon: Grid3X3, image: '/tools/MiniCactpot.png', desc: '期望值計算器，協助選擇最高回報路線。', color: 'bg-amber-500' },
+    { id: 'event-calendar', label: '活動行事曆', icon: Calendar, image: '/tools/EventCalendar.png', desc: '管理 FC 或固定團的活動排程，快速查看接下來的行程。', color: 'bg-rose-500' },
     { id: 'tails', label: '庫洛天書', icon: BookOpen, image: '/tools/WondrousTails.png', desc: '連線機率預測，視覺化模擬成功機率。', color: 'bg-blue-500' },
     { id: 'chocobo', label: '陸行鳥染色', icon: Bird, image: '/tools/ChocoboColor.png', desc: '精確計算所需水果數量與餵食順序。', color: 'bg-amber-600' },
     { id: 'sightseeing', label: '探索筆記', icon: Clock, image: '/tools/SightseeingLog.png', desc: '整合時間與天氣，提示當前可完成目標。', color: 'bg-blue-600' },
@@ -137,6 +145,22 @@ export default function Dashboard({ et, onViewChange }: DashboardProps) {
 
       {/* Reset Countdowns */}
       <ResetCountdown dailyProgress={progress.daily} weeklyProgress={progress.weekly} />
+
+      {/* Upcoming Events */}
+      {upcomingEvents.length > 0 && (
+        <div className="bg-[#1a1a1a] border border-white/5 rounded-3xl p-8 space-y-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-[#D39E47]">接下來的活動</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {upcomingEvents.map(event => (
+              <div key={event.id} className="bg-black/20 rounded-2xl p-4 border border-white/5">
+                <h4 className="font-bold text-white mb-1">{event.title}</h4>
+                <p className="text-xs text-[#9e9e9e] font-mono mb-2">{new Date(event.date).toLocaleString()}</p>
+                <p className="text-xs text-[#E0E0E0] line-clamp-2">{event.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {tools.map((tool) => (

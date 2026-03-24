@@ -12,7 +12,8 @@ import {
   ExternalLink,
   ShoppingCart,
   Map as MapIcon,
-  Bell
+  Bell,
+  Calendar
 } from 'lucide-react';
 
 const guideItems = [
@@ -28,6 +29,20 @@ const guideItems = [
       '支援每日、每週重設任務提醒。',
       '支援倒數計時功能，適用於雇員委託或小隊訓練。',
       '鬧鐘設定會自動儲存，重新整理頁面也不會遺失。'
+    ]
+  },
+  {
+    id: 'event-calendar',
+    label: '活動行事曆 (Event Calendar)',
+    icon: Calendar,
+    image: '/tools/EventCalendar.png',
+    color: 'text-rose-500',
+    bg: 'bg-rose-500/10',
+    desc: '管理 FC 或固定團的活動排程。您可以新增、編輯或刪除活動，並在首頁快速查看接下來的行程。',
+    tips: [
+      '活動會自動依照時間排序。',
+      '在首頁會顯示接下來的 3 個活動。',
+      '資料會儲存在瀏覽器中，不會遺失。'
     ]
   },
   {

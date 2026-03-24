@@ -22,7 +22,8 @@ import {
   HelpCircle,
   ShoppingCart,
   Map as MapIcon,
-  Bell
+  Bell,
+  Calendar
 } from 'lucide-react';
 import { getEorzeaTime } from './utils/ff14';
 
@@ -39,12 +40,21 @@ import NavigationGuide from './components/NavigationGuide';
 import MarketBoard from './components/MarketBoard';
 import UsefulLinks from './components/UsefulLinks';
 import TreasureHunt from './components/TreasureHunt';
+import EventCalendar, { CalendarEvent } from './components/EventCalendar';
 import SetAlarm from './components/SetAlarm';
 
-type View = 'home' | 'cactpot' | 'tails' | 'weather' | 'sightseeing' | 'changelog' | 'chocobo' | 'checklist' | 'guide' | 'market' | 'links' | 'treasure' | 'alarm';
+type View = 'home' | 'cactpot' | 'tails' | 'weather' | 'sightseeing' | 'changelog' | 'chocobo' | 'checklist' | 'guide' | 'market' | 'links' | 'treasure' | 'alarm' | 'event-calendar';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('home');
+  const [events, setEvents] = useState<CalendarEvent[]>(() => {
+    const saved = localStorage.getItem('ff14-events');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ff14-events', JSON.stringify(events));
+  }, [events]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [et, setEt] = useState(getEorzeaTime());
   const [localTime, setLocalTime] = useState(new Date());
@@ -78,6 +88,7 @@ export default function App() {
       label: '實用工具',
       items: [
         { id: 'alarm', label: '自訂鬧鐘', icon: Bell, image: '/tools/SetAlarm.png' },
+        { id: 'event-calendar', label: '活動行事曆', icon: Calendar, image: '/tools/EventCalendar.png' },
         { id: 'market', label: '市場查詢', icon: ShoppingCart, image: '/tools/MarketBoard.png' },
         { id: 'treasure', label: '藏寶搜尋', icon: MapIcon, image: '/tools/TreasureHunt.png' },
         { id: 'cactpot', label: '仙人微彩', icon: Grid3X3, image: '/tools/MiniCactpot.png' },
@@ -103,10 +114,11 @@ export default function App() {
 
   const renderView = () => {
     switch (currentView) {
-      case 'home': return <Dashboard et={et} onViewChange={setCurrentView} />;
+      case 'home': return <Dashboard et={et} onViewChange={setCurrentView} events={events} />;
       case 'checklist': return <DutyChecklist />;
       case 'market': return <MarketBoard />;
       case 'alarm': return <SetAlarm />;
+      case 'event-calendar': return <EventCalendar events={events} setEvents={setEvents} />;
       case 'cactpot': return <MiniCactpot />;
       case 'tails': return <WondrousTails />;
       case 'weather': return <Skywatcher et={et} />;
@@ -116,7 +128,7 @@ export default function App() {
       case 'links': return <UsefulLinks />;
       case 'changelog': return <Changelog />;
       case 'guide': return <NavigationGuide onViewChange={setCurrentView} />;
-      default: return <Dashboard et={et} onViewChange={setCurrentView} />;
+      default: return <Dashboard et={et} onViewChange={setCurrentView} events={events} />;
     }
   };
 

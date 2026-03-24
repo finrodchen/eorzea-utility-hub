@@ -226,7 +226,7 @@ export default function MarketBoard() {
           console.error('XIVAPI ID fetch failed', err);
         }
         // Fallback for ID if XIVAPI fails
-        const mockItem = { ID: itemId, Name: `道具 ID: ${term}`, Icon: '/i/000000/000001.png' };
+        const mockItem: SearchResult = { ID: itemId, Name: `道具 ID: ${term}`, Icon: '/i/000000/000001.png', ItemKind: { Name: '未知' } };
         setSearchResults([mockItem]);
         fetchMarketData(mockItem);
         setIsSearching(false);

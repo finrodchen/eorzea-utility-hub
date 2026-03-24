@@ -4,6 +4,15 @@ import { motion } from 'motion/react';
 
 const updates = [
   {
+    version: 'v1.8.0',
+    date: '2026-03-24',
+    title: '活動行事曆功能上線',
+    items: [
+      { type: 'feature', text: '新增「活動行事曆 (Event Calendar)」功能，支援 FC/固定團活動排程管理。' },
+      { type: 'feature', text: '首頁新增「接下來的活動」預覽區塊，快速查看未來 3 個活動。' }
+    ]
+  },
+  {
     version: 'v1.7.0',
     date: '2026-03-24',
     title: '藏寶搜尋與鬧鐘功能上線',
