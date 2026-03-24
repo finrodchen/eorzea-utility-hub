@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Calendar, Plus, Trash2, Clock, Tag, Edit2, Check, X } from 'lucide-react';
+import { Calendar, Plus, Trash2, Clock, Tag, Edit2, Check, X, ChevronDown } from 'lucide-react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { zhTW } from 'date-fns/locale';
@@ -33,6 +33,8 @@ export default function EventCalendar({ events, setEvents }: EventCalendarProps)
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [newEvent, setNewEvent] = useState({ title: '', date: new Date(), type: 'raid' as EventType, desc: '' });
+  const [isTypeOpen, setIsTypeOpen] = useState(false);
+  const [isEditTypeOpen, setIsEditTypeOpen] = useState(false);
 
   const addEvent = () => {
     if (!newEvent.title) return;
@@ -57,12 +59,41 @@ export default function EventCalendar({ events, setEvents }: EventCalendarProps)
     setEvents(prev => prev.filter(e => e.id !== id));
   };
 
+  const TypeDropdown = ({ value, onChange, isOpen, setIsOpen }: { value: EventType, onChange: (t: EventType) => void, isOpen: boolean, setIsOpen: (o: boolean) => void }) => (
+    <div className="relative w-full">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white flex items-center justify-between"
+      >
+        <div className="flex items-center gap-2">
+          <Tag size={16} className={typeConfig[value].color} />
+          {typeConfig[value].label}
+        </div>
+        <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl z-20 overflow-hidden">
+          {(['raid', 'fc', 'other'] as EventType[]).map(type => (
+            <button
+              key={type}
+              onClick={() => { onChange(type); setIsOpen(false); }}
+              className={`w-full flex items-center gap-2 p-3 hover:bg-white/5 ${value === type ? 'text-[#D39E47]' : 'text-white'}`}
+            >
+              <Tag size={16} className={typeConfig[type].color} />
+              {typeConfig[type].label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-[#D39E47]">
-            <Calendar size={20} />
+            <img src="/tools/EventCalendar.png" alt="" className="w-5 h-5 object-contain" referrerPolicy="no-referrer" />
             <span className="text-xs font-bold uppercase tracking-widest">Event Calendar</span>
           </div>
           <h1 className="text-3xl font-bold text-white">活動行事曆</h1>
@@ -102,19 +133,12 @@ export default function EventCalendar({ events, setEvents }: EventCalendarProps)
                 calendarClassName="bg-[#1a1a1a] border border-white/10 text-white"
               />
             </div>
-            <div className="relative">
-              <select 
-                value={newEvent.type} onChange={e => setNewEvent({...newEvent, type: e.target.value as EventType})}
-                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white appearance-none focus:border-[#D39E47] focus:ring-1 focus:ring-[#D39E47] transition-colors"
-              >
-                <option value="raid">團練</option>
-                <option value="fc">FC聚會</option>
-                <option value="other">其他</option>
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#9e9e9e]">
-                <Tag size={16} />
-              </div>
-            </div>
+            <TypeDropdown 
+              value={newEvent.type} 
+              onChange={(t) => setNewEvent({...newEvent, type: t})} 
+              isOpen={isTypeOpen} 
+              setIsOpen={setIsTypeOpen} 
+            />
             <textarea 
               placeholder="活動說明" value={newEvent.desc}
               onChange={e => setNewEvent({...newEvent, desc: e.target.value})}
@@ -154,14 +178,12 @@ export default function EventCalendar({ events, setEvents }: EventCalendarProps)
                       calendarClassName="bg-[#1a1a1a] border border-white/10 text-white"
                     />
                   </div>
-                  <select 
-                    value={editEvent?.type} onChange={e => setEditEvent(prev => prev ? {...prev, type: e.target.value as EventType} : null)}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-2 text-white"
-                  >
-                    <option value="raid">團練</option>
-                    <option value="fc">FC聚會</option>
-                    <option value="other">其他</option>
-                  </select>
+                  <TypeDropdown 
+                    value={editEvent?.type || 'raid'} 
+                    onChange={(t) => setEditEvent(prev => prev ? {...prev, type: t} : null)} 
+                    isOpen={isEditTypeOpen} 
+                    setIsOpen={setIsEditTypeOpen} 
+                  />
                   <textarea 
                     value={editEvent?.desc}
                     onChange={e => setEditEvent(prev => prev ? {...prev, desc: e.target.value} : null)}

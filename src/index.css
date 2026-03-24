@@ -32,7 +32,7 @@
   border-left-color: rgba(255, 255, 255, 0.1) !important;
   background-color: #1a1a1a !important;
 }
-.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-header {
+.react-datepicker__time-header {
   color: white !important;
   background-color: #1a1a1a !important;
 }
