@@ -9,6 +9,9 @@ const updates = [
     title: '活動行事曆功能上線',
     items: [
       { type: 'feature', text: '新增「活動行事曆 (Event Calendar)」功能，支援 FC/固定團活動排程管理。' },
+      { type: 'feature', text: '整合官方活動資訊，自動抓取最新冒險消息並支援外部連結跳轉。' },
+      { type: 'feature', text: '實作客戶端快取機制 (TTL 60min)，優化載入速度並降低伺服器負擔。' },
+      { type: 'improvement', text: '統一全站活動時間顯示格式為「MM/DD 下午HH:mm」。' },
       { type: 'feature', text: '首頁新增「接下來的活動」預覽區塊，快速查看未來 3 個活動。' }
     ]
   },

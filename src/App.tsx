@@ -166,7 +166,7 @@ export default function App() {
               <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-lg shadow-amber-500/10" referrerPolicy="no-referrer" />
               <div>
                 <h1 className="font-bold text-lg tracking-tight text-white">艾歐澤亞助手</h1>
-                <p className="text-[10px] uppercase tracking-widest text-[#D39E47] font-semibold">Utility Hub V1.7.0</p>
+                <p className="text-[10px] uppercase tracking-widest text-[#D39E47] font-semibold">Utility Hub V1.8.0</p>
               </div>
             </button>
 

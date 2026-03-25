@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Calendar, Plus, Trash2, Clock, Tag, Edit2, Check, X, ChevronDown } from 'lucide-react';
+import { Calendar, Plus, Trash2, Clock, Tag, Edit2, Check, X, ChevronDown, Bird, ExternalLink } from 'lucide-react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { zhTW } from 'date-fns/locale';
 
+import { fetchOfficialEvents, OfficialEvent } from '../services/eventService';
+
 registerLocale('zh-TW', zhTW);
 
-export type EventType = 'raid' | 'fc' | 'other';
+export type EventType = 'raid' | 'fc' | 'other' | 'official';
 
 export interface CalendarEvent {
   id: string;
@@ -15,12 +17,14 @@ export interface CalendarEvent {
   date: string;
   type: EventType;
   desc: string;
+  url?: string;
 }
 
 const typeConfig: Record<EventType, { label: string; color: string; bg: string }> = {
   raid: { label: '團練', color: 'text-rose-500', bg: 'bg-rose-500/10' },
   fc: { label: 'FC聚會', color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
   other: { label: '其他', color: 'text-amber-500', bg: 'bg-amber-500/10' },
+  official: { label: '官方活動', color: 'text-[#00B0FF]', bg: 'bg-[#00B0FF]/10' },
 };
 
 interface EventCalendarProps {
@@ -35,6 +39,26 @@ export default function EventCalendar({ events, setEvents }: EventCalendarProps)
   const [newEvent, setNewEvent] = useState({ title: '', date: new Date(), type: 'raid' as EventType, desc: '' });
   const [isTypeOpen, setIsTypeOpen] = useState(false);
   const [isEditTypeOpen, setIsEditTypeOpen] = useState(false);
+  const [officialEvents, setOfficialEvents] = useState<CalendarEvent[]>([]);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      const data = await fetchOfficialEvents();
+      const mapped: CalendarEvent[] = data.map((e: OfficialEvent) => ({
+        id: e.eventid,
+        title: e.title,
+        date: e.date || new Date().toISOString(),
+        type: 'official',
+        desc: '官方舉辦的活動',
+        url: e.url
+      }));
+      setOfficialEvents(mapped);
+    };
+
+    loadEvents();
+  }, []);
+
+  const allEvents = [...events, ...officialEvents].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const addEvent = () => {
     if (!newEvent.title) return;
@@ -155,10 +179,10 @@ export default function EventCalendar({ events, setEvents }: EventCalendarProps)
       </AnimatePresence>
 
       <div className="grid gap-4">
-        {events.length === 0 ? (
+        {allEvents.length === 0 ? (
           <div className="text-center py-12 text-[#9e9e9e]">目前沒有排定的活動。</div>
         ) : (
-          events.map(event => (
+          allEvents.map(event => (
             <motion.div key={event.id} className="bg-[#1a1a1a] border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-white/10 transition-colors">
               {editingId === event.id ? (
                 <div className="w-full space-y-3">
@@ -180,7 +204,7 @@ export default function EventCalendar({ events, setEvents }: EventCalendarProps)
                   </div>
                   <TypeDropdown 
                     value={editEvent?.type || 'raid'} 
-                    onChange={(t) => setEditEvent(prev => prev ? {...prev, type: t} : null)} 
+                    onChange={(t) => setEditEvent(prev => prev ? {...prev, type: t as EventType} : null)} 
                     isOpen={isEditTypeOpen} 
                     setIsOpen={setIsEditTypeOpen} 
                   />
@@ -198,24 +222,50 @@ export default function EventCalendar({ events, setEvents }: EventCalendarProps)
                 <>
                   <div className="flex items-center gap-4">
                     <div className={`p-3 rounded-lg ${typeConfig[event.type].bg} ${typeConfig[event.type].color}`}>
-                      <Tag size={20} />
+                      {event.type === 'official' ? <Bird size={20} /> : <Tag size={20} />}
                     </div>
                     <div>
-                      <h4 className="font-bold text-white">{event.title}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-white">{event.title}</h4>
+                        {event.type === 'official' && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-[#00B0FF]/20 text-[#00B0FF] rounded font-bold">OFFICIAL</span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 text-xs text-[#9e9e9e] font-mono">
                         <Clock size={12} />
-                        {new Date(event.date).toLocaleString()}
+                        {new Date(event.date).toLocaleString('zh-TW', { 
+                          month: '2-digit', 
+                          day: '2-digit', 
+                          hour: '2-digit', 
+                          minute: '2-digit',
+                          hour12: true 
+                        })}
                       </div>
                       <p className="text-sm text-[#9e9e9e] mt-1">{event.desc}</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => startEdit(event)} className="p-2 text-[#D39E47] hover:bg-[#D39E47]/10 rounded-lg transition-colors">
-                      <Edit2 size={18} />
-                    </button>
-                    <button onClick={() => deleteEvent(event.id)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors">
-                      <Trash2 size={18} />
-                    </button>
+                    {event.type === 'official' ? (
+                      event.url && (
+                        <a 
+                          href={event.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-2 text-[#00B0FF] hover:bg-[#00B0FF]/10 rounded-lg transition-colors"
+                        >
+                          <ExternalLink size={18} />
+                        </a>
+                      )
+                    ) : (
+                      <>
+                        <button onClick={() => startEdit(event)} className="p-2 text-[#D39E47] hover:bg-[#D39E47]/10 rounded-lg transition-colors">
+                          <Edit2 size={18} />
+                        </button>
+                        <button onClick={() => deleteEvent(event.id)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors">
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </>
               )}

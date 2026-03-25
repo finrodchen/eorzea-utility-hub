@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Grid3X3, BookOpen, CloudSun, Clock, ArrowRight, Bird, CheckSquare, ShoppingCart, Settings, Map as MapIcon, Bell, Calendar } from 'lucide-react';
+import { Grid3X3, BookOpen, CloudSun, Clock, ArrowRight, Bird, CheckSquare, ShoppingCart, Settings, Map as MapIcon, Bell, Calendar, ExternalLink } from 'lucide-react';
 import { CalendarEvent } from './EventCalendar';
 import ResetCountdown from './ResetCountdown';
 import { INITIAL_TASKS } from '../constants/tasks';
+
+import { fetchOfficialEvents, OfficialEvent } from '../services/eventService';
 
 interface DashboardProps {
   et: { hours: number; minutes: number };
@@ -12,17 +14,42 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ et, onViewChange, events }: DashboardProps) {
-  const [progress, setProgress] = React.useState({
+  const [progress, setProgress] = useState({
     daily: { done: 0, total: 0 },
     weekly: { done: 0, total: 0 }
   });
+  const [officialEvents, setOfficialEvents] = useState<OfficialEvent[]>([]);
 
   const upcomingEvents = events
     .filter(e => new Date(e.date) > new Date())
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 3);
 
-  React.useEffect(() => {
+  const formatEventDate = (dateStr?: string) => {
+    if (!dateStr) return null;
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleString('zh-TW', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }).replace(/\//g, '/');
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  useEffect(() => {
+    // Fetch official events from service (with cache)
+    const loadEvents = async () => {
+      const data = await fetchOfficialEvents();
+      setOfficialEvents(data);
+    };
+
+    loadEvents();
+
     const saved = localStorage.getItem('ff14-duty-checklist-v2');
     if (saved) {
       try {
@@ -38,7 +65,6 @@ export default function Dashboard({ et, onViewChange, events }: DashboardProps) 
         });
       } catch (e) {}
     } else {
-      // Fallback to total counts if no saved data
       setProgress({
         daily: { done: 0, total: INITIAL_TASKS.filter(t => t.category === 'daily').length },
         weekly: { done: 0, total: INITIAL_TASKS.filter(t => t.category === 'weekly').length }
@@ -146,21 +172,76 @@ export default function Dashboard({ et, onViewChange, events }: DashboardProps) 
       {/* Reset Countdowns */}
       <ResetCountdown dailyProgress={progress.daily} weeklyProgress={progress.weekly} />
 
-      {/* Upcoming Events */}
-      {upcomingEvents.length > 0 && (
-        <div className="bg-[#1a1a1a] border border-white/5 rounded-3xl p-8 space-y-6">
+      {/* Upcoming Events Section */}
+      <div className="bg-[#1a1a1a] border border-white/5 rounded-3xl p-8 space-y-8">
+        <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold uppercase tracking-widest text-[#D39E47]">接下來的活動</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {upcomingEvents.map(event => (
-              <div key={event.id} className="bg-black/20 rounded-2xl p-4 border border-white/5">
-                <h4 className="font-bold text-white mb-1">{event.title}</h4>
-                <p className="text-xs text-[#9e9e9e] font-mono mb-2">{new Date(event.date).toLocaleString()}</p>
-                <p className="text-xs text-[#E0E0E0] line-clamp-2">{event.desc}</p>
-              </div>
-            ))}
+          <button 
+            onClick={() => handleViewChange('event-calendar')}
+            className="text-xs text-[#9e9e9e] hover:text-white transition-colors flex items-center gap-1"
+          >
+            查看完整行事曆 <ArrowRight size={12} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Official Events */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#00B0FF]">
+              <Bird size={16} />
+              <h4 className="text-xs font-bold uppercase tracking-wider">官方活動</h4>
+            </div>
+            <div className="space-y-3">
+              {officialEvents.length > 0 ? (
+                officialEvents.map(event => (
+                  <a 
+                    key={event.eventid}
+                    href={event.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block p-4 bg-black/20 rounded-2xl border border-white/5 hover:border-[#00B0FF]/30 transition-all group"
+                  >
+                    <div className="flex justify-between items-start gap-4">
+                      <h5 className="font-bold text-white group-hover:text-[#00B0FF] transition-colors">{event.title}</h5>
+                      <ExternalLink size={14} className="text-[#9e9e9e] shrink-0" />
+                    </div>
+                    {event.date && <p className="text-[10px] font-mono text-[#9e9e9e] mt-2">{formatEventDate(event.date)}</p>}
+                  </a>
+                ))
+              ) : (
+                <p className="text-sm text-[#9e9e9e] italic py-4">目前沒有官方活動資訊</p>
+              )}
+            </div>
+          </div>
+
+          {/* Personal Events */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#D39E47]">
+              <Calendar size={16} />
+              <h4 className="text-xs font-bold uppercase tracking-wider">個人行程</h4>
+            </div>
+            <div className="space-y-3">
+              {upcomingEvents.length > 0 ? (
+                upcomingEvents.map(event => (
+                  <div key={event.id} className="p-4 bg-black/20 rounded-2xl border border-white/5">
+                    <h5 className="font-bold text-white mb-1">{event.title}</h5>
+                    <div className="flex items-center gap-2 text-[10px] font-mono text-[#9e9e9e] mb-2">
+                      <Clock size={10} />
+                      {formatEventDate(event.date)}
+                    </div>
+                    {event.desc && <p className="text-[10px] text-[#E0E0E0] line-clamp-1">{event.desc}</p>}
+                  </div>
+                ))
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center py-8 text-center space-y-2 bg-black/10 rounded-2xl border border-dashed border-white/5">
+                  <Calendar size={24} className="text-white/10" />
+                  <p className="text-sm text-[#9e9e9e]">目前沒有活動安排</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {tools.map((tool) => (
@@ -204,7 +285,7 @@ export default function Dashboard({ et, onViewChange, events }: DashboardProps) 
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
             <span className="text-white text-sm font-medium flex items-center gap-2">
-              查看官方最新消息 <ArrowRight size={16} />
+              查看官方最新版本消息 <ArrowRight size={16} />
             </span>
           </div>
         </a>
