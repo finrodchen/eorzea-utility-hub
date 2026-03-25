@@ -2,54 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Bell, Clock, Trash2, CalendarDays, CalendarRange, FileText, Anchor, Briefcase, Compass, Sword, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 
-interface Alarm {
-  id: string;
-  label: string;
-  targetTime: Date;
-  active: boolean;
-  isReset: boolean;
-  durationHours?: number;
-  offsetMinutes?: number;
+import { Alarm } from '../types';
+
+interface SetAlarmProps {
+  alarms: Alarm[];
+  setAlarms: React.Dispatch<React.SetStateAction<Alarm[]>>;
+  now: Date;
 }
 
-export default function SetAlarm() {
-  const [alarms, setAlarms] = useState<Alarm[]>(() => {
-    const saved = localStorage.getItem('ff14-alarms');
-    if (saved) {
-      try {
-        return JSON.parse(saved).map((a: any) => ({ ...a, targetTime: new Date(a.targetTime) }));
-      } catch (e) { return []; }
-    }
-    return [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('ff14-alarms', JSON.stringify(alarms));
-  }, [alarms]);
-  const [now, setNow] = useState(new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    if (Notification.permission !== 'granted') {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  useEffect(() => {
-    alarms.forEach(alarm => {
-      if (alarm.active && now >= alarm.targetTime) {
-        new Notification('艾歐澤亞助手 - 鬧鐘提醒', {
-          body: `${alarm.label} 時間到了！`,
-          icon: '/logo.png'
-        });
-        setAlarms(prev => prev.map(a => a.id === alarm.id ? { ...a, active: false } : a));
-      }
-    });
-  }, [now, alarms]);
+export default function SetAlarm({ alarms, setAlarms, now }: SetAlarmProps) {
 
   const formatCountdown = (target: Date) => {
     const diff = target.getTime() - now.getTime();

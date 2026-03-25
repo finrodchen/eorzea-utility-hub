@@ -43,6 +43,8 @@ import TreasureHunt from './components/TreasureHunt';
 import EventCalendar, { CalendarEvent } from './components/EventCalendar';
 import SetAlarm from './components/SetAlarm';
 
+import { Alarm, EorzeaTime } from './types';
+
 type View = 'home' | 'cactpot' | 'tails' | 'weather' | 'sightseeing' | 'changelog' | 'chocobo' | 'checklist' | 'guide' | 'market' | 'links' | 'treasure' | 'alarm' | 'event-calendar';
 
 export default function App() {
@@ -52,19 +54,66 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [alarms, setAlarms] = useState<Alarm[]>(() => {
+    const saved = localStorage.getItem('ff14-alarms');
+    if (saved) {
+      try {
+        return JSON.parse(saved).map((a: any) => ({ ...a, targetTime: new Date(a.targetTime) }));
+      } catch (e) { return []; }
+    }
+    return [];
+  });
+
   useEffect(() => {
     localStorage.setItem('ff14-events', JSON.stringify(events));
   }, [events]);
+
+  useEffect(() => {
+    localStorage.setItem('ff14-alarms', JSON.stringify(alarms));
+  }, [alarms]);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [et, setEt] = useState(getEorzeaTime());
+  const [now, setNow] = useState(new Date());
+  const [et, setEt] = useState<EorzeaTime>(getEorzeaTime());
   const [localTime, setLocalTime] = useState(new Date());
 
   useEffect(() => {
     const timer = setInterval(() => {
+      const currentTime = new Date();
+      setNow(currentTime);
       setEt(getEorzeaTime());
-      setLocalTime(new Date());
+      setLocalTime(currentTime);
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let changed = false;
+    const nextAlarms = alarms.map(alarm => {
+      if (alarm.active && now >= alarm.targetTime) {
+        // Trigger notification
+        if (Notification.permission === 'granted') {
+          new Notification('艾歐澤亞助手 - 鬧鐘提醒', {
+            body: `${alarm.label} 時間到了！`,
+            icon: '/logo.png',
+            tag: alarm.id // Use tag to prevent duplicate notifications for the same alarm
+          });
+        }
+        changed = true;
+        return { ...alarm, active: false };
+      }
+      return alarm;
+    });
+
+    if (changed) {
+      setAlarms(nextAlarms);
+    }
+  }, [now, alarms]);
+
+  useEffect(() => {
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
   }, []);
 
   const [openGroups, setOpenGroups] = useState<string[]>([]);
@@ -117,7 +166,7 @@ export default function App() {
       case 'home': return <Dashboard et={et} onViewChange={setCurrentView} events={events} />;
       case 'checklist': return <DutyChecklist />;
       case 'market': return <MarketBoard />;
-      case 'alarm': return <SetAlarm />;
+      case 'alarm': return <SetAlarm alarms={alarms} setAlarms={setAlarms} now={now} />;
       case 'event-calendar': return <EventCalendar events={events} setEvents={setEvents} />;
       case 'cactpot': return <MiniCactpot />;
       case 'tails': return <WondrousTails />;

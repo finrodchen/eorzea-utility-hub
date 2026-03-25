@@ -13,7 +13,8 @@ import {
   ShoppingCart,
   Map as MapIcon,
   Bell,
-  Calendar
+  Calendar,
+  Layers
 } from 'lucide-react';
 
 const guideItems = [
@@ -156,6 +157,20 @@ const guideItems = [
       '列表會根據當前 ET 時間自動排序。',
       '標註了每個目標所需的特定表情動作。',
       '結合天氣預報功能，提前規劃行程。'
+    ]
+  },
+  {
+    id: 'dungeon-guide',
+    label: '副本速查 (Dungeon Guide)',
+    icon: Layers,
+    image: '/tools/DungeonGuide.png',
+    color: 'text-[#D39E47]',
+    bg: 'bg-[#D39E47]/10',
+    desc: '專為冒險者設計的「一句話攻略」。在副本過場動畫時，快速複習關鍵機制與職能重點。',
+    tips: [
+      '支援中文、英文與等級搜尋。',
+      '區分坦克、補職、輸出與全員的專屬提醒。',
+      '按資料片版本分類，方便快速查找。'
     ]
   },
   {

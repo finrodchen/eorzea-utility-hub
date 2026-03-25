@@ -4,6 +4,16 @@ import { motion } from 'motion/react';
 
 const updates = [
   {
+    version: 'v1.9.0',
+    date: '2026-03-25',
+    title: '副本機制速查功能上線',
+    items: [
+      { type: 'feature', text: '新增「副本機制速查 (Dungeon Guide)」功能，提供各類副本的一句話核心攻略。' },
+      { type: 'feature', text: '支援職能專屬提醒（坦/補/輸），並以顏色與圖示區分。' },
+      { type: 'feature', text: '新增版本篩選功能，支援 2.0 至 7.0 的副本查詢。' }
+    ]
+  },
+  {
     version: 'v1.8.0',
     date: '2026-03-24',
     title: '活動行事曆功能上線',
