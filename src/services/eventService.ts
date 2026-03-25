@@ -14,7 +14,7 @@ interface CacheData {
 }
 
 export const fetchOfficialEvents = async (): Promise<OfficialEvent[]> => {
-  const n8nUrl = process.env.VITE_N8N_EVENTS_URL;
+  const n8nUrl = import.meta.env.VITE_N8N_EVENTS_URL;
   
   // 1. Check Cache
   const cached = localStorage.getItem(CACHE_KEY);
@@ -33,14 +33,17 @@ export const fetchOfficialEvents = async (): Promise<OfficialEvent[]> => {
 
   // 2. Fetch from Network
   if (n8nUrl) {
+    console.log('Attempting to fetch official events from:', n8nUrl);
     try {
       const response = await fetch(n8nUrl);
       if (response.ok) {
         const text = await response.text();
+        console.log('Fetch successful, response length:', text.length);
         if (text && text.trim() !== '') {
           try {
             const data = JSON.parse(text);
             if (Array.isArray(data)) {
+              console.log('Successfully parsed official events array');
               // Update Cache
               const cacheData: CacheData = {
                 timestamp: Date.now(),
@@ -48,15 +51,23 @@ export const fetchOfficialEvents = async (): Promise<OfficialEvent[]> => {
               };
               localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
               return data;
+            } else {
+              console.warn('Official events data is not an array:', data);
             }
           } catch (parseError) {
             console.error('Failed to parse official events JSON:', parseError);
           }
+        } else {
+          console.warn('Official events response was empty');
         }
+      } else {
+        console.error('Official events fetch failed with status:', response.status);
       }
     } catch (error) {
-      console.error('Failed to fetch official events:', error);
+      console.error('Failed to fetch official events (Network Error):', error);
     }
+  } else {
+    console.warn('VITE_N8N_EVENTS_URL is not defined in the environment');
   }
 
   // 3. Fallback
